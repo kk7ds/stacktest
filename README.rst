@@ -63,8 +63,14 @@ Assumptions
 
 When running in -one or -module mode the testing skips tox / testr
 entirely and just uses subunit.run (if subunit-trace is available) or
-testtools.run from the .tox/py27 directory. This means we assume
-you've run ``tox -e py27`` at least once before running this.
+testtools.run from the .tox/py27 directory by default. This assumes
+that tox has been run at least once before to generate the venv.
+
+By default, if test files are structured as ``tests/unit/..`` and
+``tests/functional/..``, the ``py27`` and ``functional`` virtualenvs
+will be used for executing subunit-trace or testtools. The fallback is
+always ``py27`` and additional rules can be defined by setting
+``stacktest-venv-pattern``.
 
 Futures
 =======

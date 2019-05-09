@@ -38,8 +38,10 @@
 ;; By default, the root of a project is found by looking for a '.tox'
 ;; directory. This will indicate that tests were previously run
 ;; here. For anything more narrow than a tox target, we use python out
-;; of .tox/py27/bin to live within that venv. Projects that don't
-;; include a py27 venv won't work.
+;; of .tox/py27/bin to live within that venv. If your project uses
+;; something other than py27 by default or for a subset of tests,
+;; you will need to adjust stacktest-venv-pattern so that the proper
+;; venv is chosen based on the filename of the buffer.
 
 ;; This is the recommended way to activate stacktest keybindings when
 ;; viewing Python files:
@@ -73,21 +75,27 @@ present is considered to be a 'project root'.")
 (defvar stacktest-toxcmd "tox"
   "The command to run tests at the top level. Typically tox")
 
-(defvar stacktest-subunit-cmd ".tox/py27/bin/python -m subunit.run"
+(defvar stacktest-subunit-cmd ".tox/$VENV/bin/python -m subunit.run"
   "What test runner should be run on tests. This defaults to
   using subunit.run directly, which requires use of a filter as
   well. Other options would be to use testtools.run directly,
-  which has less useful output")
+  which has less useful output. If the string contains '$VENV'
+  then the appropriate virtualenv will be determined from
+  stacktest-venv-pattern and substituted.")
 
-(defvar stacktest-testtools-cmd ".tox/py27/bin/python -m testtools.run"
+(defvar stacktest-testtools-cmd ".tox/$VENV/bin/python -m testtools.run"
   "What test runner should be run on tests. This defaults to
   using subunit.run directly, which requires use of a filter as
   well. Other options would be to use testtools.run directly,
-  which has less useful output")
+  which has less useful output. If the string contains '$VENV'
+  then the appropriate virtualenv will be determined from
+  stacktest-venv-pattern and substituted.")
 
-(defvar stacktest-subunit-trace ".tox/py27/bin/subunit-trace"
+(defvar stacktest-subunit-trace ".tox/$VENV/bin/subunit-trace"
   "What filter to use. subunit-trace is required if we use
-  subunit.run to run the tests.")
+  subunit.run to run the tests. If the string contains '$VENV'
+  then the appropriate virtualenv will be determined from
+  stacktest-venv-pattern and substituted.")
 
 (defvar stacktest-project-root-test 'stacktest-project-root
   "The function to use to discover the root of the current
@@ -151,7 +159,7 @@ created." )
          (testrunner (if (and (string= testrunner stacktest-toxcmd) target)
                          (format "%s -e %s" stacktest-toxcmd target)
                        testrunner))
-         (testfilter (if (string= testcmd stacktest-subunit-cmd) (format "| %s%s" where stacktest-subunit-trace) ""))
+         (testfilter (if (string= testcmd (stacktest-venvify stacktest-subunit-cmd)) (format "| %s%s" where (stacktest-venvify stacktest-subunit-trace)) ""))
          )
     (if (not where)
         (error
@@ -251,11 +259,11 @@ created." )
    ; if there are no tests, run tox
    ((not tests) stacktest-toxcmd)
    ; if pdb, we need to use testtools
-   (pdb stacktest-testtools-cmd)
+   (pdb (stacktest-venvify stacktest-testtools-cmd))
    ; if we have subunit trace, we can use subunit for better output
-   ((file-exists-p (concat where stacktest-subunit-trace)) stacktest-subunit-cmd)
+   ((file-exists-p (concat where (stacktest-venvify stacktest-subunit-trace))) (stacktest-venvify stacktest-subunit-cmd))
    ; if that doesn't exist, fall back to testtools
-   (t stacktest-testtools-cmd))
+   (t (stacktest-venvify stacktest-testtools-cmd)))
 )
 
 (defun stacktest-find-test-runner-names (runner)
@@ -337,6 +345,30 @@ important resources such as project roots."
   (reduce '(lambda (x y) (or x y))
           (mapcar (lambda (d) (member d (directory-files dirname)))
                   stacktest-project-root-files)))
+
+(defvar stacktest-venv-pattern '(("." "py27")
+                                 ("^.*/tests/unit/.*" "py27")
+                                 ("^.*/tests/functional/.*" "functional"))
+  "A list of (regexp venv) values to help determine which venv we should
+  use to run the various test helpers. This is used if you have separate
+  venvs for unit and functional tests. The last matching pattern wins.
+  The default value should work for many openstack projects, which
+  assumes 'py27' is probably the right thing, unless your test is under
+  tests/functional, in which case it uses the 'functional' venv.")
+
+(defun stacktest-venv ()
+  "Returns the venv to use for running the test helpers"
+  (interactive)
+  (let* ((basename (string-remove-prefix (stacktest-find-project-root) (buffer-file-name)))
+         (chosen-venv (dolist (match stacktest-venv-pattern venv)
+                        (if (string-match (car match) basename)
+                            (setq venv (car (cdr match)))))))
+    (message (concat "Chose venv " chosen-venv " for " basename))
+    chosen-venv))
+
+(defun stacktest-venvify (path)
+  "Replaces $VENV in path with the chosen venv for the current buffer"
+  (replace-regexp-in-string "\$VENV" (stacktest-venv) path t))
 
 (provide 'stacktest)
 

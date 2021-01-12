@@ -97,6 +97,12 @@ present is considered to be a 'project root'.")
   then the appropriate virtualenv will be determined from
   stacktest-venv-pattern and substituted.")
 
+(defvar stacktest-pep8-target "pep8"
+  "The tox target for checking pep8")
+
+(defvar stacktest-pep8-command (concat ".tox/" stacktest-pep8-target "/bin/flake8")
+  "The command to run for checking pep8 on a single module.")
+
 (defvar stacktest-project-root-test 'stacktest-project-root
   "The function to use to discover the root of the current
 project. The function should return a directory path.")
@@ -218,12 +224,12 @@ created." )
 (defun stacktest-pep8-module ()
   "run stacktest on current buffer with pep8 runner"
   (interactive)
-  (run-stacktest (tramp-safe-where buffer-file-name) nil nil ".tox/pep8/bin/flake8"))
+  (run-stacktest (tramp-safe-where buffer-file-name) nil nil stacktest-pep8-command))
 
 (defun stacktest-pep8 ()
   "run stacktest with pep8 target"
   (interactive)
-  (run-stacktest nil nil nil "pep8"))
+  (run-stacktest nil nil nil stacktest-pep8-target))
 
 (defun stacktest-module (&optional debug pdb)
   "run stacktest (via eggs/bin/test) on current buffer"

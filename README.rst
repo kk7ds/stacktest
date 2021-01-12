@@ -33,6 +33,9 @@ From within a python file you can run any of the following:
 - M-x stacktest-target : prompts for and runs a specific ``tox``
   environment
 - M-x stacktest-again : rerun the last test run
+- M-x stacktest-pep8 : run the ``pep8`` tox target
+- M-x stacktest-pep8-module : run the ``pep8`` check command on
+  the current file
 
 You can bind these to more convenient keys. The various modes are
 extremely useful when iterating on test development. The compilation

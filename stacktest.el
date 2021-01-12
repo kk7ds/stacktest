@@ -145,7 +145,7 @@ created." )
   (let* (
          (where (or stacktest-local-project-root (stacktest-find-project-root)))
          (default-directory where)
-         (testcmd (stacktest-find-test-runner where tests pdb))
+         (testcmd (stacktest-find-test-runner where tests pdb target))
          (where (tramp-safe-where where))
          ;; (args (concat ;;; disabling pdb (if debug "--pdb" "")
          ;;               " "
@@ -215,6 +215,16 @@ created." )
   (interactive)
   (stacktest-all t))
 
+(defun stacktest-pep8-module ()
+  "run stacktest on current buffer with pep8 runner"
+  (interactive)
+  (run-stacktest (tramp-safe-where buffer-file-name) nil nil ".tox/pep8/bin/flake8"))
+
+(defun stacktest-pep8 ()
+  "run stacktest with pep8 target"
+  (interactive)
+  (run-stacktest nil nil nil "pep8"))
+
 (defun stacktest-module (&optional debug pdb)
   "run stacktest (via eggs/bin/test) on current buffer"
   (interactive)
@@ -254,12 +264,14 @@ created." )
   (interactive)
   (apply 'run-stacktest stacktest--last-run-params))
 
-(defun stacktest-find-test-runner (&optional where tests pdb)
+(defun stacktest-find-test-runner (&optional where tests pdb target)
   (cond
    ; if there are no tests, run tox
    ((not tests) stacktest-toxcmd)
    ; if pdb, we need to use testtools
    (pdb (stacktest-venvify stacktest-testtools-cmd))
+   ; if target is a path in venv bin, choose it
+   ((and target (string-match-p "/bin/" target) (stacktest-venvify target)))
    ; if we have subunit trace, we can use subunit for better output
    ((file-exists-p (concat where (stacktest-venvify stacktest-subunit-trace))) (stacktest-venvify stacktest-subunit-cmd))
    ; if that doesn't exist, fall back to testtools

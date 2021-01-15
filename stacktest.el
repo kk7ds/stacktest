@@ -378,6 +378,7 @@ important resources such as project roots."
   "Returns the venv to use for running the test helpers"
   (interactive)
   (let* ((basename (string-remove-prefix (stacktest-find-project-root) (buffer-file-name)))
+         (venv nil)
          (chosen-venv (dolist (match stacktest-venv-pattern venv)
                         (if (string-match (car match) basename)
                             (setq venv (eval (car (cdr match))))))))

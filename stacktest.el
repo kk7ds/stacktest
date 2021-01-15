@@ -66,8 +66,6 @@
 ;; (define-key stacktest-mode-map "\C-cpm" 'stacktest-pdb-module)
 ;; (define-key stacktest-mode-map "\C-cp." 'stacktest-pdb-one)
 
-(require 'cl) ;; for "reduce"
-
 (defvar stacktest-project-root-files '(".tox")
   "A list of file names. A directory with any of the files
 present is considered to be a 'project root'.")
@@ -362,7 +360,7 @@ important resources such as project roots."
              (file-name-directory (directory-file-name dn)))))))
 
 (defun stacktest-project-root (dirname)
-  (reduce '(lambda (x y) (or x y))
+  (cl-reduce '(lambda (x y) (or x y))
           (mapcar (lambda (d) (member d (directory-files dirname)))
                   stacktest-project-root-files)))
 

@@ -380,7 +380,7 @@ important resources such as project roots."
   (let* ((basename (string-remove-prefix (stacktest-find-project-root) (buffer-file-name)))
          (chosen-venv (dolist (match stacktest-venv-pattern venv)
                         (if (string-match (car match) basename)
-                            (setq venv (car (cdr match)))))))
+                            (setq venv (eval (car (cdr match))))))))
     (message (concat "Chose venv " chosen-venv " for " basename))
     chosen-venv))
 
